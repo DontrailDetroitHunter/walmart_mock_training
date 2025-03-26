@@ -62,7 +62,8 @@ This project is an end-to-end data analysis solution designed to extract critica
      - Analyzing peak sales periods and customer buying patterns.
      - Profit margin analysis by branch and category.
    - **Documentation**: Keep clear notes of each query's objective, approach, and results.
-```sql 
+```sql
+   ##1. Find the different payment methods, number of transactions, and  quantity sold. 
     SELECT
       	payment_method,
       	count(*)as no_payments,
@@ -74,8 +75,161 @@ This project is an end-to-end data analysis solution designed to extract critica
     	payment_method;
 ```
 
+```sql
+   ## 2. Identify the highest-rated category in each branch, displaying the branch, category, AVG RATING.
+   select *
+   from
+   (	select 
+   		branch,
+   		category,
+   		avg(rating) as AVG_RATING,
+   		rank() over(partition by branch order by avg(rating) desc) as rank
+   	from
+   		walmart
+   	group
+   		by
+   		1, 2
+   )
+   where rank = 1
+```
+```sql
+   ## Identify the busiest day for each branch based on the number of transactions
+   select *
+   from
+   	(select 
+   		branch,
+   		to_char(to_date(date, 'DD/MM/YY'), 'DAY') as day_name,
+   		count(*) as busy_days,
+   		rank() over(partition by branch order by count(*) desc) as rank
+   	from 
+   		walmart
+   	group
+   		by
+   		1,2
+   	)
+   where rank = 1;
+```
+```sql
+   ##Determine the average, minimum, and maximum rating of products for each city.
+   ##List the city, average_rating,  and min_rating 
+   select
+   	city,
+   	category,
+   	min(rating) as min_rating,
+   	max(rating) as max_rating,
+   	avg(rating) as avg_rating
+   from
+   	walmart
+   group
+   	by
+   	1,2
+```
+```sql
+   ##Calculate the total profit for each category by considering total_profit as
+   ## (Unit price * quantity * profit_margin)
+   ## List category and total_profit, ordered from highest to lowest profit.
+   select
+   	category,
+   	sum(total) as total_revenue,
+   	sum(unit_price * quantity * profit_margin) as total_profit
+   from
+   	walmart
+   group
+   	by
+   	1
+   	order
+   		by
+   		total_profit desc;
+```
+```sql
+   -- 7.
+   -- Determin the most common payment method for each branch --
+   -- Display branch and the preferred_payment_method. --
+   with cte
+   as
+   (select 
+   	branch,
+   	payment_method,
+   	count(*) as preferred_payment_method,
+   	rank() over(partition by branch order by count(*) desc) as rank
+   from
+   	walmart
+   group
+   	by
+   	1,2)
+   select * from cte
+   where rank = 1
+```
+```sql
+   ##8.
+   ## Categorize sales into 3 groups: MORNING, AFTERNOON, EVENING
+   ## FIND OUT each of the shifts and number of invoices
+   select * from walmart;
+   select
+   	branch,
+   	case 
+   	when extract (hour from(time::time)) < 12 then 'Morning'
+   	when extract (hour from(time::time)) between 12 and 17 then 'Afternoon'
+   	else
+   		'Evening'
+   	end shifts,
+   	count(*)
+   from 
+   	walmart
+   group 
+   	by
+   	1,2
+   order
+   	by 1,3 desc;
+```
+```sql
+## 9)
+## Identify 5 branches with the highest decreased ratio in
+## revenue compare to last year(current year 2023 and last year 2022)
 
+with revenue_2022
+as
+(	
+	select
+		branch,
+		sum(total) as revenue
+	from
+		walmart
+	where extract(year from to_date(date, 'DD/MM/YY')) = 2022
+	group 
+		by 1
+),
 
+revenue_2023
+as
+
+(
+	select
+		branch,
+		sum(total) as revenue
+	from
+		walmart
+	where extract(year from to_date(date, 'DD/MM/YY')) = 2023
+	group 
+		by 1
+)
+select 
+	ls.branch,
+	ls.revenue as last_year_revenue,
+	cs.revenue as cr_year_revenue,
+	round(
+	(ls.revenue - cs.revenue)::numeric/
+	ls.revenue::numeric * 100,
+	2)	as revenue_decrease_ratio
+from revenue_2022 as ls
+join
+revenue_2023 as cs
+on ls.branch = cs.branch
+where
+	ls.revenue > cs.revenue
+order by 4 desc
+limit 5;
+```
 ### 10. Project Publishing and Documentation
    - **Documentation**: Maintain well-structured documentation of the entire process in Markdown or a Jupyter Notebook.
    - **Project Publishing**: Publish the completed project on GitHub or any other version control platform, including:
