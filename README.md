@@ -230,6 +230,67 @@ where
 order by 4 desc
 limit 5;
 ```
+```pythpn
+	# Step 1 Data Exploration & Leading
+	# import dependencies
+	import pandas as pd
+	
+	# mysql tool kit
+	import pymysql  # this will work as an adapter
+	from sqlalchemy import create_engine
+	
+	# psql
+	import psycopg2
+	
+	print(pd.__version__)
+	pd.set_option("display.max_columns", None)  # Display all columns
+	# pd.set_option("display.width", None)  # Optional: Prevents line wrapping
+	# pd.set_option("display.max_colwidth", None)
+	df = pd.read_csv("walmart_clean_data.csv", encoding_errors="ignore")
+	df.shape
+	df.head()
+	df.describe()
+	df.info()
+	# all duplicates
+	df.duplicated().sum()
+	df.isnull().sum()
+	df.drop_duplicates(inplace=True)
+	df.duplicated().sum()
+	df.shape
+	# dropping all rows with missing records
+	df.dropna(inplace=True)
+	# verify if nulls have been dropped.
+	df.isnull().sum()
+	df.shape
+	df.dtypes
+	df["unit_price"].astype(float)
+	df["unit_price"] = df["unit_price"].str.replace("$", "").astype(float)
+	df.head()
+	df.info()
+	df.columns
+	df["total"] = df["unit_price"] * df["quantity"]
+	df.head()
+	df.shape
+	
+	
+	
+	df.to_csv("walmart_clean_data.csv", index=False)
+	df.to_sql
+	df.columns = df.columns.str.lower()
+	df.columns
+	engine_psql = create_engine(
+	    "postgresql+psycopg2://postgres:password@localhost:5432/walmart_clean_data"
+	)
+	try:
+	    engine_psql
+	    print("Connection successful to psql")
+	except:
+	    print("Unsuccessful database connection.")
+	
+	df.to_sql(name="walmart_clean_data", con=engine_psql, if_exists="append", index=False)
+	df.columns
+	df.columns
+```
 ### 10. Project Publishing and Documentation
    - **Documentation**: Maintain well-structured documentation of the entire process in Markdown or a Jupyter Notebook.
    - **Project Publishing**: Publish the completed project on GitHub or any other version control platform, including:
